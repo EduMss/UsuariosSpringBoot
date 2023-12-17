@@ -2,11 +2,13 @@ package org.edumss.Controllers;
 
 import lombok.var;
 import org.edumss.domain.users.*;
+import org.edumss.infra.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +27,9 @@ public class UsuariosControllers {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private TokenService tokenService;
 
     //Obter Usuários
 
@@ -52,11 +57,19 @@ public class UsuariosControllers {
         try {
             var usernamePassword = new UsernamePasswordAuthenticationToken(data.getName(), data.getPassword());
             var auth = authenticationManager.authenticate(usernamePassword);
+
+            if(auth.getPrincipal() instanceof UserDetails){
+                var token = tokenService.generateToken((UserDetails) auth.getPrincipal());
+                return ResponseEntity.ok(token);
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok("Login feito com sucesso!");
+
     }
 
     //Registrar Usuários
